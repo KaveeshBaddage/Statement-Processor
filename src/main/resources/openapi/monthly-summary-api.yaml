@@ -1,0 +1,180 @@
+openapi: 3.1.0
+
+info:
+  title: Monthly Financial Summary API
+  description:
+    API receiving calculated monthly financial summaries.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+
+tags:
+  - name: Monthly Summary
+
+paths:
+
+  /monthly-summaries:
+
+    post:
+      tags:
+        - Monthly Summary
+
+      operationId: createMonthlySummary
+
+      summary: Submit a monthly financial summary
+
+      parameters:
+
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: |
+            Unique key used to prevent duplicate processing of the same summary.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+            example: "account-12345-2026-10"
+
+        - name: X-Correlation-ID
+          in: header
+          required: false
+          description: Correlation identifier for tracing.
+          schema:
+            type: string
+            format: uuid
+
+      requestBody:
+        required: true
+
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MonthlySummary'
+
+      responses:
+
+        '201':
+          description: Summary successfully created
+
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonthlySummaryResponse'
+
+        '400':
+          description: Invalid summary
+
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+        '409':
+          description: Summary already exists
+
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+        '500':
+          description: Internal server error
+
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+components:
+
+  schemas:
+
+    MonthlySummary:
+
+      type: object
+
+      required:
+        - accountId
+        - month
+        - currency
+        - income
+        - spending
+        - balance
+
+      properties:
+
+        accountId:
+          type: string
+          example: "account-12345"
+
+        month:
+          type: string
+          pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+          example: "2026-10"
+
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          example: "EUR"
+
+        income:
+          type: number
+          format: double
+          minimum: 0
+          example: 3500.00
+
+        spending:
+          type: number
+          format: double
+          minimum: 0
+          example: 620.50
+
+        balance:
+          type: number
+          format: double
+          example: 2879.50
+
+    MonthlySummaryResponse:
+
+      type: object
+
+      required:
+        - summaryId
+        - status
+
+      properties:
+
+        summaryId:
+          type: string
+          example: "summary-123456"
+
+        status:
+          type: string
+          enum:
+            - ACCEPTED
+            - PROCESSED
+
+    Problem:
+
+      type: object
+
+      required:
+        - code
+        - message
+
+      properties:
+
+        code:
+          type: string
+          example: "INVALID_SUMMARY"
+
+        message:
+          type: string
+          example: "Summary contains invalid values"
+
+        correlationId:
+          type: string
+          example: "c8a2f5d4-9f51-4e6e-b8d3-123456789abc"

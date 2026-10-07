@@ -1,0 +1,303 @@
+openapi: 3.1.0
+
+info:
+  title: Bank Statement API
+  description:
+    External API providing monthly bank statement data.
+    This API represents the contract between the statement processor and the banking provider.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:3000
+
+tags:
+  - name: Statements
+    description: Bank statement operations
+
+paths:
+
+  /accounts/{accountId}/statements/{month}:
+
+    get:
+      tags:
+        - Statements
+
+      operationId: getMonthlyStatement
+
+      summary: Get a monthly bank statement
+
+      parameters:
+
+        - name: accountId
+          in: path
+          required: true
+          description: Internal system identifier of the bank account
+          schema:
+            type: string
+            example: "account-12345"
+
+        - name: month
+          in: path
+          required: true
+          description: Statement month in YYYY-MM format
+          schema:
+            type: string
+            pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+            example: "2026-10"
+
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of transactions to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 500
+            default: 100
+          example: 100
+
+        - name: cursor
+          in: query
+          required: false
+          description:
+            Opaque cursor returned by the previous response.
+            The client must pass this value unchanged when requesting the next page.
+          schema:
+            type: string
+          example: "eyJvZmZzZXQiOjEwMH0="
+
+      responses:
+
+        '200':
+          description: Monthly bank statement
+
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonthlyStatement'
+
+        '400':
+          description: Invalid request
+
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+
+        '404':
+          description: Account or statement not found
+
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem404'
+
+        '500':
+          description: Internal provider error
+
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem500'
+
+
+components:
+
+  schemas:
+
+    MonthlyStatement:
+      type: object
+
+      required:
+        - accountId
+        - month
+        - currency
+        - openingBalance
+        - closingBalance
+        - transactions
+        - hasMore
+
+      properties:
+
+        accountId:
+          type: string
+          description: Internal system identifier of the bank account
+          example: "account-12345"
+
+        month:
+          type: string
+          description: Statement month in YYYY-MM format
+          pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+          example: "2026-10"
+
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          description: ISO 4217 currency code
+          example: "EUR"
+
+        openingBalance:
+          type: number
+          format: double
+          description: Account balance at the beginning of the statement period
+          example: 2500.00
+
+        closingBalance:
+          type: number
+          format: double
+          description: Account balance at the end of the statement period
+          example: 5879.50
+
+        transactions:
+          type: array
+          description: Transactions contained in the current page
+          items:
+            $ref: '#/components/schemas/Transaction'
+
+        nextCursor:
+          type: string
+          nullable: true
+          description:
+            Opaque cursor used to retrieve the next page.
+            Null when there are no more transactions.
+          example: "eyJvZmZzZXQiOjEwMH0="
+
+        hasMore:
+          type: boolean
+          description: Whether another page of transactions is available
+          example: true
+
+
+    Transaction:
+      type: object
+
+      required:
+        - transactionId
+        - date
+        - amount
+        - currency
+        - direction
+        - category
+        - description
+
+      properties:
+
+        transactionId:
+          type: string
+          example: "txn-98765"
+
+        date:
+          type: string
+          format: date
+          example: "2026-10-01"
+
+        amount:
+          type: number
+          format: decimal
+          multipleOf: 0.01
+          description: Absolute transaction amount
+          example: 3500.00
+
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          description: ISO 4217 currency code
+          example: "EUR"
+
+        direction:
+          $ref: '#/components/schemas/TransactionDirection'
+
+        category:
+          $ref: '#/components/schemas/TransactionCategory'
+
+        description:
+          type: string
+          example: "ACME CORPORATION SALARY"
+
+
+    TransactionDirection:
+      type: string
+      enum:
+        - CREDIT
+        - DEBIT
+
+
+    TransactionCategory:
+      type: string
+      enum:
+        - SALARY
+        - OTHER_INCOME
+        - GROCERIES
+        - RENT
+        - UTILITIES
+        - TRANSPORT
+        - ENTERTAINMENT
+        - TRANSFER
+        - REFUND
+        - OTHER
+
+
+    Problem:
+      type: object
+
+      required:
+        - code
+        - message
+
+      properties:
+
+        code:
+          type: string
+          example: "STATEMENT_NOT_FOUND"
+
+        message:
+          type: string
+          example: "Statement for 2026-10 was not found"
+
+        correlationId:
+          type: string
+          example: "c8a2f5d4-9f51-4e6e-b8d3-123456789abc"
+
+    Problem404:
+      type: object
+
+      required:
+        - code
+        - message
+
+      properties:
+
+        code:
+          type: string
+          example: "ACCOUNT_NOT_FOUND"
+
+        message:
+          type: string
+          example: "Account not found for account-id: ac123-4535"
+
+        correlationId:
+          type: string
+          example: "vbbn345r-9f51-4e6e-b8d3-123456789abc"
+
+    Problem500:
+      type: object
+
+      required:
+        - code
+        - message
+
+      properties:
+
+        code:
+          type: string
+          example: "INTERNAL_SERVER_ERROR"
+
+        message:
+          type: string
+          example: "error-5123"
+
+        correlationId:
+          type: string
+          example: "asd2323f5d4-9f51-4e6e-b8d3-123456789abc"
