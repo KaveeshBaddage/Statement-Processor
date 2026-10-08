@@ -1,11 +1,15 @@
 package com.fintech.statementprocessor.adapter.out.summary;
 
+import com.fintech.statementprocessor.adapter.out.exception.SummaryApiException;
+import com.fintech.statementprocessor.adapter.out.exception.SummaryApiUnavailableException;
 import com.fintech.statementprocessor.application.port.out.MonthlySummaryPort;
-import com.fintech.statementprocessor.domain.model.MonthlySummary;
 import com.fintech.statementprocessor.client.summary.api.MonthlySummaryApi;
+import com.fintech.statementprocessor.domain.model.MonthlySummary;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 
 import java.util.UUID;
-import org.springframework.stereotype.Component;
 
 @Component
 public class MonthlySummaryApiAdapter
@@ -27,10 +31,16 @@ public class MonthlySummaryApiAdapter
 
         var request = mapper.toApiModel(summary);
 
-        String idempotencyKey = UUID.randomUUID().toString();
+        String idempotencyKey = String.join(":", request.getAccountId(), request.getMonth());
 
-        monthlySummaryApi.createMonthlySummary(
-                idempotencyKey,
-                request, UUID.randomUUID());
+        try {
+            monthlySummaryApi.createMonthlySummary(
+                    idempotencyKey,
+                    request, UUID.randomUUID());
+        } catch (HttpClientErrorException ex) {
+            throw new SummaryApiException("Summery API returned HTTP " + ex.getStatusCode(), ex);
+        } catch (HttpServerErrorException ex) {
+            throw new SummaryApiUnavailableException("Summery API is unavailable", ex);
+        }
     }
 }

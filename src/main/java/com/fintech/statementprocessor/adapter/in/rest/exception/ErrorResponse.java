@@ -1,6 +1,6 @@
 package com.fintech.statementprocessor.adapter.in.rest.exception;
 
-public record ProblemResponse(
+public record ErrorResponse(
         String code,
         String message) {
 }
