@@ -27,7 +27,7 @@ public class MonthlySummaryApiAdapter
     }
 
     @Override
-    public void submitSummary(MonthlySummary summary) {
+    public void submitSummary(MonthlySummary summary, String requestId) {
 
         var request = mapper.toApiModel(summary);
 
@@ -36,7 +36,7 @@ public class MonthlySummaryApiAdapter
         try {
             monthlySummaryApi.createMonthlySummary(
                     idempotencyKey,
-                    request, UUID.randomUUID());
+                    request, UUID.fromString(requestId));
         } catch (HttpClientErrorException ex) {
             throw new SummaryApiException("Summery API returned HTTP " + ex.getStatusCode(), ex);
         } catch (HttpServerErrorException ex) {

@@ -18,7 +18,6 @@ import java.time.YearMonth;
 import java.util.List;
 
 import static com.fintech.statementprocessor.domain.model.TransactionCategory.*;
-import static com.fintech.statementprocessor.domain.model.TransactionCategory.TRANSPORT;
 import static com.fintech.statementprocessor.domain.model.TransactionDirection.CREDIT;
 import static com.fintech.statementprocessor.domain.model.TransactionDirection.DEBIT;
 import static org.mockito.Mockito.*;
@@ -41,23 +40,23 @@ public class ProcessMonthlyStatementUseCaseTest {
     void shouldSubmitCalculatedSummary() {
 
         List<Transaction> transactions = List.of(
-                new Transaction("txn-001", LocalDate.of(2026,10,2), BigDecimal.valueOf(1000),
-                        "EUR", CREDIT, SALARY, "salary income"  ),
-                new Transaction("txn-004", LocalDate.of(2026,10,5), BigDecimal.valueOf(50),
-                        "EUR", DEBIT, TRANSPORT, "HSL transport"  )
+                new Transaction("txn-001", LocalDate.of(2026, 10, 2), BigDecimal.valueOf(1000),
+                        "EUR", CREDIT, SALARY, "salary income"),
+                new Transaction("txn-004", LocalDate.of(2026, 10, 5), BigDecimal.valueOf(50),
+                        "EUR", DEBIT, TRANSPORT, "HSL transport")
         );
 
-        when(bankStatementPort.getTransactions("test-accountId", YearMonth.of(2026,10),
+        when(bankStatementPort.getTransactions("test-accountId", YearMonth.of(2026, 10),
                 100, null))
-                .thenReturn(new TransactionPage("test-accountId", YearMonth.of(2026,10),
-                        "EUR", transactions, null, false  ));
+                .thenReturn(new TransactionPage("test-accountId", YearMonth.of(2026, 10),
+                        "EUR", transactions, null, false));
 
-        useCase.process("test-accountId", YearMonth.of(2026,10));
+        useCase.process("test-accountId", YearMonth.of(2026, 10), "sample-requestId");
 
 
         verify(monthlySummaryPort)
-                .submitSummary(new MonthlySummary("test-accountId", YearMonth.of(2026,10),
-                        "EUR", BigDecimal.valueOf(1000) ,  BigDecimal.valueOf(50),  BigDecimal.valueOf(950)));
+                .submitSummary(new MonthlySummary("test-accountId", YearMonth.of(2026, 10),
+                        "EUR", BigDecimal.valueOf(1000), BigDecimal.valueOf(50), BigDecimal.valueOf(950)), "sample-requestId");
     }
 
     @Test
@@ -123,7 +122,7 @@ public class ProcessMonthlyStatementUseCaseTest {
 
         useCase.process(
                 "account-12345",
-                YearMonth.of(2026, 10));
+                YearMonth.of(2026, 10), "sample-requestId");
 
         verify(bankStatementPort, times(2))
                 .getTransactions(
@@ -140,6 +139,6 @@ public class ProcessMonthlyStatementUseCaseTest {
                                 "EUR",
                                 BigDecimal.valueOf(1000),
                                 BigDecimal.valueOf(250),
-                                BigDecimal.valueOf(750)));
+                                BigDecimal.valueOf(750)), "sample-requestId");
     }
 }

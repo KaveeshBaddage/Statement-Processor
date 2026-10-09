@@ -6,6 +6,7 @@ public interface ProcessMonthlyStatementUseCase {
 
     MonthlySummaryResult process(
             String accountId,
-            YearMonth month);
+            YearMonth month,
+            String requestId);
 }
 

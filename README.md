@@ -1,4 +1,4 @@
-# BAnk Statement Processor
+# Bank Statement Processor
 
 A Spring Boot application that retrieves monthly bank statement data from an external banking API, calculates account totals, and submits the resulting summary to an external API.
 
@@ -62,7 +62,7 @@ Technical details of external integrations such as pagination, HTTP communicatio
 
 ## Contract-First Development
 
-The integration with the external banking API is developed using a contract-first approach.
+The integrations with the external APIs are developed using a contract-first approach.
 
 An OpenAPI specification acts as the source of truth for the external API contract. Java client code is generated automatically during the Maven build process.
 
@@ -143,9 +143,28 @@ POST /api/v1/accounts/account-12345/monthly-summary/2026-10
 
 ### Design Considerations
 
+
+#### Request Pagination
+
 The external banking API exposes paginated statement data.
 
 This implementation deliberately hides pagination from application consumers. The application is responsible for retrieving all pages required for the requested month, aggregating the results, performing the calculations, and submitting the final summary.
+
+
+#### Observability
+
+Implemented request correlation and logging to improve traceability and troubleshooting.
+
+-  Generates a UUID when the incoming **X-Request-ID** header is missing; otherwise, reuses the provided ID.
+
+- Returns the request ID in the response header and stores it in MDC for log correlation.
+
+- Propagates X-Request-ID to downstream APIs via generated OpenAPI clients.
+
+- Logs key processing events, transaction counts, summary calculation, and downstream submission status.
+
+This enables easier request tracking across service boundaries and simplifies debugging.
+
 
 ---
 

@@ -4,5 +4,5 @@ import com.fintech.statementprocessor.domain.model.MonthlySummary;
 
 public interface MonthlySummaryPort {
 
-    void submitSummary(MonthlySummary summary);
+    void submitSummary(MonthlySummary summary, String requestId);
 }
