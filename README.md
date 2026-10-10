@@ -2,7 +2,11 @@
 
 A Spring Boot application that retrieves monthly bank statement data from an external banking API, calculates account totals, and submits the resulting summary to an external API.
 
-The project follows a **Contract-First Development** approach and is implemented using **Ports & Adapters (Hexagonal) Architecture** to maintain a clear separation between business logic and external integrations.
+###  What problem does this application try to solve?
+
+The application automates monthly bank statement processing by fetching statement data from an external API, calculating income, spending, and balance, and submitting the summary to another API without requiring persistence.
+
+It follows Contract-First Development and Ports & Adapters (Hexagonal) Architecture to enable independent development and separate business logic from external integrations.
 
 ---
 
@@ -63,7 +67,8 @@ Technical details of external integrations such as pagination, HTTP communicatio
 
 ## Contract-First Development
 
-The integrations with the external APIs are developed using a contract-first approach.
+The integrations with the external APIs are developed using a contract-first approach, enabling development to begin before the other parties have
+completed their implementations by using agreed API contracts and generated clients.
 
 An OpenAPI specification acts as the source of truth for the external API contract. Java client code is generated automatically during the Maven build process.
 
@@ -143,6 +148,18 @@ POST /api/v1/accounts/account-12345/monthly-summary/2026-10
 ```
 
 ### Design Considerations
+
+#### Request Validation
+
+- Request validation is implemented as a design consideration to ensure incoming requests meet the expected requirements before processing.
+
+- Input Validation: Validates request fields, formats, and required values.
+
+- Data Integrity: Prevents invalid or incomplete data from entering the processing flow.
+
+- Error Handling: Returns appropriate HTTP responses for invalid requests.
+
+-  Reliability: Reduces unnecessary processing and helps maintain consistent application behavior.
 
 
 #### Request Pagination
@@ -241,11 +258,18 @@ This enables parallel development while maintaining a stable integration contrac
 
 ## Testing
 
-The project is tested at multiple levels.
+The project includes unit tests, Spring Boot slice tests, and integration tests to verify business logic, individual application layers, and end-to-end component interactions.
+
+To performs a clean build, runs tests, and verifies the project through Maven's build lifecycle
+
+ ```bash
+./mvnw clean verify
+ ```
+
 
 ### Unit Tests
 
-MonthlySummaryCalculatorTest  & ProcessMonthlyStatementUseCaseTest
+MonthlySummaryCalculatorTest  & ProcessMonthlyStatementUseCaseTest verifies
 
 - Monthly balance calculations
 - Income aggregation
@@ -265,6 +289,8 @@ while mocking the application use case layer. It is not a full integration test 
 
 ### Integration Tests
 
+BankStatementApiAdapterIntegrationTest & MonthlySummaryApiAdapterIntegrationTest verifies
+
 - REST API endpoints
 - External API adapters
 - OpenAPI-generated client integration
@@ -273,7 +299,7 @@ while mocking the application use case layer. It is not a full integration test 
 
 Contract tests have not been included in the current implementation phase. They may be introduced in a future phase to verify API compatibility between services and ensure that changes to API contracts do not unintentionally break integrations.
 
-Benefits of future implementation:
+Benefits of contract tests:
 
 - Detects API contract mismatches between consumers and providers.
 
@@ -285,9 +311,62 @@ Benefits of future implementation:
 
 ---
 
-## Deployment
+## Dockerization and Deployment
 
-The application can be packaged and deployed as a containerized Spring Boot service.
+The Spring Boot application can be packaged and deployed as a containerized Spring Boot service. Environment-specific settings are supplied through environment variables.
+
+### Configuration
+
+Configure the external API URLs in `.env`:
+
+```dotenv
+BANK_API_BASE_URL=http://host.docker.internal:3000
+MONTHLY_SUMMARY_API_BASE_URL=http://host.docker.internal:3001
+APP_ENV=local
+```
+
+Use `host.docker.internal` when the bank statement and summary APIs run directly on your host machine for local testing. Otherwise, update the URLs and ports for your environment.
+
+### Build and Run
+
+Package the application and build the Docker image:
+
+```bash
+./mvnw clean package
+docker compose up --build -d
+```
+
+### Test and Monitor
+
+Check application health and logs:
+
+```bash
+curl http://localhost:8080/actuator/health
+docker compose logs -f statement-processor
+```
+
+Stop the application:
+
+```bash
+docker compose down
+```
+
+
+### Remote Server Deployment
+
+1. Package the application and build the Docker image.
+2. Push the image to a container registry (e.g., Docker Hub or a private registry).
+3. Install Docker and Docker Compose on the remote server.
+4. Pull the image and configure environment variables, including `BANK_API_BASE_URL` and `MONTHLY_SUMMARY_API_BASE_URL`, for the remote environment.
+5. Start the application using Docker Compose:
+
+   ```bash
+   docker compose up -d
+   ```
+
+6. Verify deployment using application health endpoints and container logs.
+
+**Note:** Ensure the server can reach both external APIs, configure firewall rules and HTTPS as appropriate, and store credentials securely. Do not use `host.docker.internal` for APIs hosted on another remote server; use their actual reachable hostname or IP address.
 
 Typical deployment options include:
 
@@ -296,17 +375,6 @@ Typical deployment options include:
 - Azure Kubernetes Service (AKS)
 - Amazon EKS
 - Google Kubernetes Engine (GKE)
-
-Recommended deployment pipeline:
-
-1. Build and execute tests.
-2. Generate OpenAPI client sources.
-3. Package the application.
-4. Build a Docker image.
-5. Push the image to a container registry.
-6. Deploy using Kubernetes manifests or Helm charts.
-
-Configuration should be externalized through environment variables or a configuration management solution.
 
 ---
 

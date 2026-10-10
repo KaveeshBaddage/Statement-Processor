@@ -18,8 +18,6 @@ public class MonthlySummaryCalculator {
         BigDecimal income = BigDecimal.ZERO;
         BigDecimal spending = BigDecimal.ZERO;
 
-        //TODO: what if transaction.direction is not debit or credit
-
         String currency = null;
 
         for (Transaction transaction : transactions) {

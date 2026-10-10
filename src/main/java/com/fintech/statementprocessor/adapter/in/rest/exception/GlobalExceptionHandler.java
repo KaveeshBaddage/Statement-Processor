@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
@@ -85,6 +86,18 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(
                         "429",
                          "Too many requests. Please try again later."
+                ));
+    }
+
+    @ExceptionHandler(ResourceAccessException.class)
+    public ResponseEntity<ErrorResponse> handleResourceAccessException(
+            ResourceAccessException  ex) {
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_GATEWAY)
+                .body(new ErrorResponse(
+                        "502",
+                        "A downstream service is temporarily unavailable. Please try again later"
                 ));
     }
 }
