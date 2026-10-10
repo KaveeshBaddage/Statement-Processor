@@ -3,6 +3,7 @@ package com.fintech.statementprocessor.adapter.in.rest.controller;
 import com.fintech.statementprocessor.adapter.in.rest.MonthlySummaryResponse;
 import com.fintech.statementprocessor.application.port.in.MonthlySummaryResult;
 import com.fintech.statementprocessor.application.port.in.ProcessMonthlyStatementUseCase;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -26,6 +27,7 @@ public class StatementProcessingController {
         this.useCase = useCase;
     }
 
+    @RateLimiter(name = "monthlySummary")
     @PostMapping(
             "/{accountId}/monthly-summary/{month}")
     public ResponseEntity<MonthlySummaryResponse> process(

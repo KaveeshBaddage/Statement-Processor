@@ -1,5 +1,8 @@
 package com.fintech.statementprocessor.adapter.in.rest.exception;
 
+import com.fintech.statementprocessor.adapter.out.exception.SummaryApiException;
+import com.fintech.statementprocessor.adapter.out.exception.SummaryApiUnavailableException;
+import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -49,5 +52,39 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(
                         "502",
                         "Bank statement provider is currently unavailable"));
+    }
+
+    @ExceptionHandler(SummaryApiException.class)
+    public ResponseEntity<ErrorResponse> handleApiException(
+            SummaryApiException ex) {
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_GATEWAY)
+                .body(new ErrorResponse(
+                        "402",
+                        "Summery API returns"));
+    }
+
+    @ExceptionHandler(SummaryApiUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleApiUnavailable(
+            SummaryApiUnavailableException ex) {
+
+        return ResponseEntity
+                .status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(new ErrorResponse(
+                        "503",
+                        "Summery API is currently unavailable"));
+    }
+
+    @ExceptionHandler(RequestNotPermitted.class)
+    public ResponseEntity<ErrorResponse> handleRateLimitExceeded(
+            RequestNotPermitted ex) {
+
+        return ResponseEntity
+                .status(HttpStatus.TOO_MANY_REQUESTS)
+                .body(new ErrorResponse(
+                        "429",
+                         "Too many requests. Please try again later."
+                ));
     }
 }

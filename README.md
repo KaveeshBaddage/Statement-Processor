@@ -25,27 +25,28 @@ The application does **not** maintain a persistence layer or store transaction d
 
 ### Processing Flow
 
-```text
-Client Request
-      │
-      ▼
-Statement Processor
-      │
-      ├── Fetch monthly statements
-      ▼
-External Bank API
-      │
-      ▼
-Calculate:
-  • Income
-  • Spending
-  • Balance
-      │
-      ▼
-Submit Monthly Summary
-      │
-      ▼
-External Summary API
+```mermaid
+flowchart TD
+
+    A["Client Request"] --> B["Statement Processor"]
+
+    B -->|"1. Fetch monthly statements"| C["External Bank API"]
+    C -->|"2. Return statement data"| B
+
+    B --> D["Calculate Monthly Summary"]
+    D --> E["Income"]
+    D --> F["Spending"]
+    D --> G["Balance"]
+
+    E --> H["Submit Monthly Summary"]
+    F --> H
+    G --> H
+
+    H -->|"3. POST summary"| I["External Summary API"]
+    I -->|"4. Return response"| H
+
+    H --> B
+    B --> J["Return API Response"]
 ```
 
 ---
@@ -165,6 +166,20 @@ Implemented request correlation and logging to improve traceability and troubles
 
 This enables easier request tracking across service boundaries and simplifies debugging.
 
+#### Rate Limiting
+
+Rate limiting is implemented to protect the application from excessive requests and maintain stability under heavy load.
+
+- Resource Protection: Limits incoming requests to prevent excessive memory and CPU consumption.
+
+- Application Stability: Reduces the risk of resource exhaustion because monthly summary processing is performed in application memory.
+
+- Controlled Processing: Restricts the number of requests allowed within a configured time period using Resilience4j.
+
+- HTTP 429 Response: Returns 429 Too Many Requests when the configured rate limit is exceeded.
+
+- Improved Reliability: Helps maintain consistent performance and reliable processing during traffic spikes.
+
 
 ---
 
@@ -256,7 +271,17 @@ while mocking the application use case layer. It is not a full integration test 
 
 ### Contract Tests
 
-- Verification that generated clients remain compatible with the OpenAPI specifications
+Contract tests have not been included in the current implementation phase. They may be introduced in a future phase to verify API compatibility between services and ensure that changes to API contracts do not unintentionally break integrations.
+
+Benefits of future implementation:
+
+- Detects API contract mismatches between consumers and providers.
+
+- Reduces integration issues when services evolve independently.
+
+- Improves confidence in API changes without relying solely on end-to-end testing.
+
+- Supports safer and more reliable service integration.
 
 ---
 
